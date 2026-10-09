@@ -1,0 +1,13 @@
+{
+  "name": "pendientes-mini-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Herramientas locales: generar claves VAPID y enviar un push de prueba. No se publica en Pages.",
+  "scripts": {
+    "claves": "node generar-claves.js",
+    "enviar": "node enviar.js"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

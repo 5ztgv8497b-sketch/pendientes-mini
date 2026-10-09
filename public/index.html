@@ -2,11 +2,76 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <!-- Seguridad: sin JS/CSS inline, sin plugins, sin cambios de base, sin envío de formularios.
+       connect-src admite https: porque pushManager.subscribe() contacta al servicio push. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+
   <title>Pendientes Mini</title>
+  <meta name="description" content="Lista de tareas local: instalable, con badge, offline y push de prueba.">
+  <meta name="theme-color" content="#f8fafc">
+
+  <!-- App web instalable en iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Pendientes">
+
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./config.js" defer></script>
+  <script src="./app.js" defer></script>
 </head>
 <body>
-  <h1>Pendientes Mini</h1>
-  <p>Preparando el despliegue…</p>
+  <main class="contenedor">
+    <header class="cabecera">
+      <h1>Pendientes Mini</h1>
+    </header>
+
+    <form id="form-nueva" class="form-nueva" autocomplete="off">
+      <label class="sr-only" for="input-tarea">Nueva tarea</label>
+      <input id="input-tarea" name="tarea" type="text" maxlength="500"
+             placeholder="Nueva tarea…" enterkeyhint="done" autocapitalize="sentences">
+      <button type="submit" id="btn-agregar">Agregar</button>
+    </form>
+
+    <section aria-label="Tareas">
+      <ul id="lista-tareas" role="list" class="lista"></ul>
+      <p id="lista-vacia" class="lista-vacia" hidden>No hay tareas todavía. Agrega la primera arriba.</p>
+      <p id="contador" class="contador" aria-live="polite">0 pendientes</p>
+    </section>
+
+    <section aria-label="Estado" class="estado">
+      <p>Estado: <span id="estado-conexion">—</span></p>
+      <p>Notificaciones: <span id="estado-notificaciones">—</span></p>
+      <p>Push: <span id="estado-push">—</span></p>
+    </section>
+
+    <p id="mensaje" class="mensaje" role="status" hidden></p>
+
+    <section aria-label="Acciones" class="acciones">
+      <button type="button" id="btn-permiso">Activar notificaciones</button>
+      <button type="button" id="btn-local" disabled>Probar notificación local</button>
+      <button type="button" id="btn-suscribir" disabled>Suscribirse a push</button>
+      <button type="button" id="btn-exportar" disabled>Exportar suscripción</button>
+    </section>
+
+    <section id="area-exportacion" class="area-exportacion" hidden>
+      <p>Copia o descarga este JSON y guárdalo <strong>fuera del repositorio</strong>:</p>
+      <textarea id="texto-exportacion" rows="6" readonly aria-label="JSON de la suscripción push"></textarea>
+      <button type="button" id="btn-copiar">Copiar al portapapeles</button>
+      <button type="button" id="btn-descargar">Descargar JSON</button>
+    </section>
+
+    <footer class="pie">
+      <p>Datos guardados solo en este dispositivo. Experimento: no uses tareas reales sensibles.</p>
+    </footer>
+  </main>
 </body>
 </html>
