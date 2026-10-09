@@ -1,11 +1,14 @@
 /* Pendientes Mini — lógica de la app (sin framework, sin build).
  *
  * Módulos reutilizables (ver docs/modulos-reutilizables.md):
- *   Config, Almacenamiento, Badge, Permisos, ControlSW, Push, Interfaz.
+ *   Config, Almacenamiento, Badge, Permisos, ControlSW, Push,
+ *   Recordatorios, Interfaz (incluye el conmutador de tema).
  *
  * Reglas fijas:
  *   - El texto de las tareas se renderiza SIEMPRE con textContent, nunca HTML.
  *   - El permiso de notificaciones se pide SOLO desde un gesto del usuario.
+ *   - Los recordatorios suenan con la app abierta (iOS no permite temporizadores
+ *     en segundo plano en apps web); los vencidos se muestran al abrirla.
  *   - Los errores se muestran en español y nunca bloquean la lista de tareas.
  */
 
@@ -46,6 +49,13 @@ const Almacenamiento = (() => {
     }
   }
 
+  /* Acepta "2026-10-09T15:30" (datetime-local) o ISO; devuelve ISO o null. */
+  function normalizarFecha(valor) {
+    if (typeof valor !== 'string' || !valor) return null;
+    const fecha = new Date(valor);
+    return Number.isNaN(fecha.getTime()) ? null : fecha.toISOString();
+  }
+
   function validarTarea(bruta) {
     if (!bruta || typeof bruta !== 'object') return null;
     const texto = typeof bruta.text === 'string' ? bruta.text.trim().slice(0, LONGITUD_TEXTO_MAX) : '';
@@ -58,6 +68,8 @@ const Almacenamiento = (() => {
         typeof bruta.createdAt === 'string' && bruta.createdAt
           ? bruta.createdAt
           : new Date().toISOString(),
+      remindAt: normalizarFecha(bruta.remindAt),
+      reminderFired: bruta.reminderFired === true,
     };
   }
 
@@ -86,7 +98,7 @@ const Almacenamiento = (() => {
     }
   }
 
-  function agregar(texto) {
+  function agregar(texto, remindAt) {
     const limpio = String(texto ?? '').trim().slice(0, LONGITUD_TEXTO_MAX);
     if (!limpio) return null;
     const tarea = {
@@ -94,6 +106,8 @@ const Almacenamiento = (() => {
       text: limpio,
       completed: false,
       createdAt: new Date().toISOString(),
+      remindAt: normalizarFecha(remindAt),
+      reminderFired: false,
     };
     tareas.unshift(tarea);
     return tarea;
@@ -111,6 +125,12 @@ const Almacenamiento = (() => {
     return tareas.length < antes;
   }
 
+  function marcarRecordatorioMostrado(id) {
+    const tarea = tareas.find((t) => t.id === id);
+    if (tarea) tarea.reminderFired = true;
+    return !!tarea;
+  }
+
   function pendientes() {
     return tareas.filter((t) => !t.completed).length;
   }
@@ -119,7 +139,10 @@ const Almacenamiento = (() => {
     return tareas;
   }
 
-  return { cargar, guardar, agregar, alternar, eliminar, pendientes, todas, disponible };
+  return {
+    cargar, guardar, agregar, alternar, eliminar,
+    marcarRecordatorioMostrado, pendientes, todas, disponible,
+  };
 })();
 
 /* ============================================================
@@ -307,22 +330,112 @@ const Push = (() => {
 })();
 
 /* ============================================================
- * Interfaz — render y eventos
+ * Recordatorios — avisos locales por fecha/hora (solo con la app visible)
+ *
+ * iOS no permite temporizadores en segundo plano en apps web ni ofrece
+ * showTrigger: por eso la revisión corre en primer plano (cada 30 s, al
+ * abrir y al volver a la app). Un recordatorio vencido suena al abrirse.
+ * ============================================================ */
+
+const Recordatorios = (() => {
+  const INTERVALO_MS = 30000;
+
+  function fechaLegible(iso) {
+    try {
+      return new Date(iso).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+    } catch {
+      return iso;
+    }
+  }
+
+  async function revisar() {
+    if (document.visibilityState !== 'visible') return;
+    if (Permisos.estado() !== 'permitidas') return;
+
+    const registro = ControlSW.obtenerRegistro() ||
+      (ControlSW.disponible() ? await navigator.serviceWorker.ready : null);
+    if (!registro) return;
+
+    const ahora = Date.now();
+    let huboCambios = false;
+
+    for (const tarea of Almacenamiento.todas()) {
+      if (!tarea.remindAt || tarea.reminderFired || tarea.completed) continue;
+      if (Date.parse(tarea.remindAt) > ahora) continue;
+
+      try {
+        await registro.showNotification('⏰ Recordatorio', {
+          body: tarea.text,
+          tag: `recordatorio-${tarea.id}`,
+          icon: './icons/icon-192.png',
+          data: { url: './' },
+        });
+      } catch {
+        /* sin permiso o fallo puntual: igualmente lo marcamos para no repetir */
+      }
+      Almacenamiento.marcarRecordatorioMostrado(tarea.id);
+      huboCambios = true;
+    }
+
+    if (huboCambios) {
+      Almacenamiento.guardar();
+      Interfaz.renderLista();
+    }
+  }
+
+  function iniciar() {
+    revisar();
+    setInterval(revisar, INTERVALO_MS);
+  }
+
+  function fechaTexto(iso) {
+    return fechaLegible(iso);
+  }
+
+  return { iniciar, revisar, fechaTexto };
+})();
+
+/* ============================================================
+ * Interfaz — render, eventos y conmutador de tema
  * ============================================================ */
 
 const Interfaz = (() => {
   const $ = (id) => document.getElementById(id);
+  const CLAVE_TEMA = 'pendientes-mini:v1:theme';
   let suscripcionActual = null;
 
   const refs = {}; // se llena en init
 
+  /* ---------- tema claro/oscuro ---------- */
+
+  function temaEfectivo() {
+    const explicito = document.documentElement.getAttribute('data-theme');
+    if (explicito === 'claro' || explicito === 'oscuro') return explicito;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+  }
+
+  function aplicarTema(tema) {
+    document.documentElement.setAttribute('data-theme', tema);
+    try {
+      localStorage.setItem(CLAVE_TEMA, tema);
+    } catch {
+      /* sin persistencia: el tema vive solo en esta vista */
+    }
+    refs.btnTema.textContent = tema === 'oscuro' ? '☀️ Claro' : '🌙 Oscuro';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', tema === 'oscuro' ? '#0d0a1f' : '#f6f4ff');
+  }
+
+  function alternarTema() {
+    aplicarTema(temaEfectivo() === 'oscuro' ? 'claro' : 'oscuro');
+  }
+
   /* ---------- mensajes ---------- */
 
   function mensaje(texto, tipo = 'info') {
-    const { mensaje: caja } = refs;
-    caja.textContent = texto;
-    caja.className = `mensaje ${tipo}`.trim();
-    caja.hidden = false;
+    refs.mensaje.textContent = texto;
+    refs.mensaje.className = `mensaje ${tipo}`.trim();
+    refs.mensaje.hidden = false;
   }
 
   function ocultarMensaje() {
@@ -363,6 +476,21 @@ const Interfaz = (() => {
       boton.setAttribute('aria-label', `Eliminar: ${tarea.text}`);
 
       li.append(casilla, texto, boton);
+
+      if (tarea.remindAt) {
+        const cuando = document.createElement('span');
+        cuando.className = 'cuando';
+        cuando.textContent = `⏰ ${Recordatorios.fechaTexto(tarea.remindAt)}`;
+        if (!tarea.completed && !tarea.reminderFired && Date.parse(tarea.remindAt) <= Date.now()) {
+          cuando.classList.add('vencida');
+          cuando.textContent += ' · vencido';
+        } else if (tarea.reminderFired && !tarea.completed) {
+          cuando.classList.add('mostrada');
+          cuando.textContent += ' · avisado';
+        }
+        li.append(cuando);
+      }
+
       lista.append(li);
     }
 
@@ -375,33 +503,53 @@ const Interfaz = (() => {
     Badge.actualizar(total);
   }
 
-  /* ---------- estado de capacidades ---------- */
+  /* ---------- estado de capacidades, con punto de color ---------- */
 
-  function textoConexion() {
-    return navigator.onLine ? 'online' : 'offline';
+  function claseConexion() {
+    return navigator.onLine ? 'ok' : 'mal';
   }
 
-  function textoNotificaciones() {
+  function claseNotificaciones() {
     switch (Permisos.estado()) {
-      case 'permitidas': return 'permitidas';
-      case 'denegadas': return 'denegadas';
-      case 'no-disponible': return 'no disponibles';
-      default: return 'sin solicitar';
+      case 'permitidas': return 'ok';
+      case 'denegadas':
+      case 'no-disponible': return 'mal';
+      default: return 'medio';
     }
   }
 
-  function textoPush() {
-    if (!Push.soportado()) return 'no disponible';
-    if (!Push.configurado()) return 'no configurado';
-    if (suscripcionActual) return 'suscrito';
-    if (!Push.enAppInstalada()) return 'no suscrito (instala la app en Inicio)';
-    return 'no suscrito';
+  function clasePush() {
+    if (!Push.soportado()) return 'mal';
+    if (!Push.configurado()) return 'medio';
+    if (suscripcionActual) return 'ok';
+    return 'medio';
   }
 
   function renderEstado() {
-    refs.estadoConexion.textContent = textoConexion();
-    refs.estadoNotificaciones.textContent = textoNotificaciones();
-    refs.estadoPush.textContent = textoPush();
+    refs.estadoConexion.textContent = navigator.onLine ? 'online' : 'offline';
+    refs.estadoConexion.className = claseConexion();
+
+    switch (Permisos.estado()) {
+      case 'permitidas': refs.estadoNotificaciones.textContent = 'permitidas'; break;
+      case 'denegadas': refs.estadoNotificaciones.textContent = 'denegadas'; break;
+      case 'no-disponible': refs.estadoNotificaciones.textContent = 'no disponibles'; break;
+      default: refs.estadoNotificaciones.textContent = 'sin solicitar';
+    }
+    refs.estadoNotificaciones.className = claseNotificaciones();
+
+    if (!Push.soportado()) {
+      refs.estadoPush.textContent = 'no disponible';
+    } else if (!Push.configurado()) {
+      refs.estadoPush.textContent = 'no configurado';
+    } else if (suscripcionActual) {
+      refs.estadoPush.textContent = 'suscrito';
+    } else if (!Push.enAppInstalada()) {
+      refs.estadoPush.textContent = 'no suscrito (instala la app en Inicio)';
+    } else {
+      refs.estadoPush.textContent = 'no suscrito';
+    }
+    refs.estadoPush.className = clasePush();
+
     renderBotones();
   }
 
@@ -428,6 +576,7 @@ const Interfaz = (() => {
     if (resultado === 'granted') {
       mensaje('Notificaciones activadas.');
       Badge.actualizar(Almacenamiento.pendientes()); // recalcular al aceptar
+      Recordatorios.revisar(); // por si hay vencidos esperando permiso
     } else if (resultado === 'denied' && Permisos.estado() === 'denegadas') {
       mensaje('Permiso denegado. Para activarlo: Ajustes → Safari (o la app) → Notificaciones, y vuelve a abrir Pendientes.', 'error');
     } else {
@@ -543,8 +692,12 @@ const Interfaz = (() => {
         refs.inputTarea.focus();
         return;
       }
-      mutarTareas(() => Almacenamiento.agregar(texto));
+      const remindAt = refs.inputRecordatorio.value
+        ? new Date(refs.inputRecordatorio.value).toISOString()
+        : null;
+      mutarTareas(() => Almacenamiento.agregar(texto, remindAt));
       refs.inputTarea.value = '';
+      refs.inputRecordatorio.value = '';
       ocultarMensaje();
       refs.inputTarea.focus();
     });
@@ -587,6 +740,10 @@ const Interfaz = (() => {
       descargarSuscripcion();
     });
 
+    refs.btnTema.addEventListener('click', () => {
+      alternarTema();
+    });
+
     window.addEventListener('online', renderEstado);
     window.addEventListener('offline', renderEstado);
 
@@ -595,6 +752,7 @@ const Interfaz = (() => {
       Badge.actualizar(Almacenamiento.pendientes()); // re-sincronizar
       renderEstado();
       refrescarSuscripcion();
+      Recordatorios.revisar(); // vencidos mientras estuvo en segundo plano
     });
   }
 
@@ -604,6 +762,8 @@ const Interfaz = (() => {
     Object.assign(refs, {
       formNueva: $('form-nueva'),
       inputTarea: $('input-tarea'),
+      inputRecordatorio: $('input-recordatorio'),
+      btnTema: $('btn-tema'),
       lista: $('lista-tareas'),
       vacia: $('lista-vacia'),
       contador: $('contador'),
@@ -621,6 +781,8 @@ const Interfaz = (() => {
       btnDescargar: $('btn-descargar'),
     });
 
+    aplicarTema(temaEfectivo());
+
     Almacenamiento.cargar();
     renderLista();
     renderEstado();
@@ -635,6 +797,7 @@ const Interfaz = (() => {
       Badge.actualizar(Almacenamiento.pendientes());
     }
 
+    Recordatorios.iniciar();
     await refrescarSuscripcion();
 
     if (!ControlSW.disponible()) {
@@ -644,7 +807,7 @@ const Interfaz = (() => {
     }
   }
 
-  return { init };
+  return { init, renderLista };
 })();
 
 Interfaz.init();

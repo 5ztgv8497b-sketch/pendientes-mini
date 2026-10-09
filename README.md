@@ -1,9 +1,11 @@
 # Pendientes Mini
 
-PWA mínima para iPhone: lista de tareas 100 % local, instalable en Inicio, con
-contador en el icono (badge), uso offline y **Web Push real** enviado a mano
-desde tu computadora. Proyecto de aprendizaje: obtén componentes reutilizables
-(almacenamiento, badge, permisos, service worker, push), no un gestor completo.
+PWA mínima para iPhone: lista de tareas 100 % local con **recordatorios por
+fecha/hora**, instalable en Inicio, con contador en el icono (badge), uso
+offline, temas claro/oscuro y **Web Push real** enviado a mano desde tu
+computadora. Proyecto de aprendizaje: obtén componentes reutilizables
+(almacenamiento, badge, permisos, service worker, push, recordatorios), no un
+gestor completo.
 
 **No es**: backend, API, base de datos, cuentas de usuario, sync entre
 dispositivos ni recordatorios programados. No envíes datos sensibles: usa
@@ -21,7 +23,8 @@ tareas ficticias.
 public/        ← ÚNICA carpeta publicada en GitHub Pages (workflow de Actions)
   index.html   Pantalla única (tareas + estado + acciones)
   styles.css   Estilos (safe-areas iOS, tema claro/oscuro)
-  app.js       Módulos: Almacenamiento, Badge, Permisos, ControlSW, Push, Interfaz
+  app.js       Módulos: Almacenamiento, Badge, Permisos, ControlSW, Push, Recordatorios, Interfaz
+  theme.js     Aplica el tema claro/oscuro guardado antes del primer render
   config.js    SOLO la clave pública VAPID
   manifest.webmanifest   display: standalone (requisito de push en iOS)
   sw.js        Precache versionado, offline, handlers push/notificationclick
@@ -103,6 +106,22 @@ Checklist completa: [docs/pruebas-iphone.md](docs/pruebas-iphone.md).
 
 Salidas de error: **404/410** → la suscripción expiró, vuelve a suscribirte y
 exportar; **401/403** → las claves VAPID no coinciden con la suscripción.
+
+## Recordatorios (fecha/hora por tarea)
+
+Al crear una tarea puedes elegir «Recordatorio (opcional)» con fecha y hora:
+
+- Con la app **abierta**, el aviso suena puntual (revisión cada 30 s).
+- Si la app estaba cerrada a la hora, al **abrirla** el recordatorio vencido
+  suena de inmediato y queda marcado «avisado».
+- Los completados ya no disparan su recordatorio.
+
+**Limitación de iOS (documentada a propósito):** una app web no puede
+despertarse sola con el teléfono bloqueado o la app cerrada — la API estándar
+de notificaciones programadas (`showTrigger`) no existe en WebKit. Para avisos
+con el teléfono bloqueado existe el push desde la Mac (sección siguiente).
+El botón 🌙/☀️ de la cabecera alterna tema oscuro/claro; sin elección, sigue
+la preferencia del sistema.
 
 ## Seguridad y privacidad
 

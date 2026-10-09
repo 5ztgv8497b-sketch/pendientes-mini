@@ -1,32 +1,66 @@
-/* Pendientes Mini — estilos mínimos, sin fuentes ni recursos externos */
+/* Pendientes Mini — estilos con temas claro/oscuro vivos, sin recursos externos.
+ * El tema explícito llega como data-theme="claro|oscuro" en <html> (theme.js);
+ * sin atributo, manda la preferencia del sistema. */
 
 :root {
-  --fondo: #f8fafc;
-  --texto: #0f172a;
-  --texto-suave: #64748b;
-  --borde: #e2e8f0;
-  --acento: #2563eb;
-  --acento-texto: #ffffff;
-  --peligro: #dc2626;
-  --exito: #16a34a;
+  color-scheme: light;
+  --fondo: #f6f4ff;
+  --fondo-suave: #ede9fe;
+  --texto: #1e1b2e;
+  --texto-suave: #675e8d;
   --tarjeta: #ffffff;
-  --error-fondo: #fef2f2;
-  --error-borde: #fecaca;
+  --borde: #e2dcf7;
+  --acento: #7c3aed;
+  --acento-fuerte: #6d28d9;
+  --acento-texto: #ffffff;
+  --gradiente: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  --exito: #059669;
+  --aviso: #d97706;
+  --peligro: #e11d48;
+  --error-fondo: #fff1f2;
+  --error-borde: #fbcfe8;
+  --sombra: 0 6px 24px rgba(124, 58, 237, 0.10);
+}
+
+[data-theme="oscuro"] {
+  color-scheme: dark;
+  --fondo: #0d0a1f;
+  --fondo-suave: #171238;
+  --texto: #ece9f7;
+  --texto-suave: #a5a0c8;
+  --tarjeta: #171233;
+  --borde: #2e2757;
+  --acento: #a78bfa;
+  --acento-fuerte: #c4b5fd;
+  --acento-texto: #0d0a1f;
+  --gradiente: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  --exito: #34d399;
+  --aviso: #fbbf24;
+  --peligro: #fb7185;
+  --error-fondo: #4c0519;
+  --error-borde: #9f1239;
+  --sombra: 0 6px 24px rgba(0, 0, 0, 0.45);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #0b1120;
-    --texto: #e2e8f0;
-    --texto-suave: #94a3b8;
-    --borde: #1e293b;
-    --acento: #3b82f6;
-    --acento-texto: #0b1120;
-    --peligro: #f87171;
-    --exito: #4ade80;
-    --tarjeta: #0f172a;
-    --error-fondo: #450a0a;
-    --error-borde: #7f1d1d;
+  :root:not([data-theme="claro"]) {
+    color-scheme: dark;
+    --fondo: #0d0a1f;
+    --fondo-suave: #171238;
+    --texto: #ece9f7;
+    --texto-suave: #a5a0c8;
+    --tarjeta: #171233;
+    --borde: #2e2757;
+    --acento: #a78bfa;
+    --acento-fuerte: #c4b5fd;
+    --acento-texto: #0d0a1f;
+    --gradiente: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+    --exito: #34d399;
+    --aviso: #fbbf24;
+    --peligro: #fb7185;
+    --error-fondo: #4c0519;
+    --error-borde: #9f1239;
+    --sombra: 0 6px 24px rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -40,6 +74,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .contenedor {
@@ -61,31 +96,83 @@ body {
   border: 0;
 }
 
+/* Cabecera con título en degradado y botón de tema */
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
 h1 {
-  font-size: 1.5rem;
-  margin: 0 0 16px;
+  font-size: 1.6rem;
+  margin: 0;
   letter-spacing: -0.02em;
+  background: var(--gradiente);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.btn-tema {
+  flex: none;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--borde);
+  background: var(--tarjeta);
+  color: var(--texto);
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: var(--sombra);
 }
 
 /* Formulario de nueva tarea */
-.form-nueva {
+.form-nueva { margin-bottom: 14px; }
+
+.fila-alta {
   display: flex;
   gap: 8px;
-  margin-bottom: 20px;
 }
 
-.form-nueva input {
+.form-nueva input[type="text"] {
   flex: 1;
   min-width: 0;
   font-size: 16px; /* evita el zoom automático de iOS al enfocar */
-  padding: 11px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--tarjeta);
+  color: var(--texto);
+}
+
+.form-recordatorio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.form-recordatorio label {
+  flex: none;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.form-nueva input[type="datetime-local"] {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  padding: 8px 10px;
   border: 1px solid var(--borde);
   border-radius: 10px;
   background: var(--tarjeta);
   color: var(--texto);
 }
 
-.form-nueva input:focus-visible {
+input:focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 1px;
 }
@@ -94,7 +181,7 @@ button {
   font-size: 16px;
   min-height: 44px; /* target táctil cómodo */
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--borde);
   background: var(--tarjeta);
   color: var(--texto);
@@ -115,10 +202,12 @@ button:disabled {
 }
 
 #btn-agregar {
-  background: var(--acento);
-  border-color: var(--acento);
-  color: var(--acento-texto);
-  font-weight: 600;
+  flex: none;
+  background: var(--gradiente);
+  border: none;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: var(--sombra);
 }
 
 /* Lista de tareas */
@@ -127,16 +216,18 @@ button:disabled {
   margin: 0;
   padding: 0;
   border: 1px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--tarjeta);
   overflow: hidden;
+  box-shadow: var(--sombra);
 }
 
 .lista li {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--borde);
 }
 
@@ -151,14 +242,32 @@ button:disabled {
 
 .lista .texto {
   flex: 1;
-  min-width: 0;
+  min-width: 40%;
   overflow-wrap: anywhere;
-  padding: 8px 0;
+  padding: 6px 0;
+  font-weight: 500;
 }
 
 .lista li.completada .texto {
   text-decoration: line-through;
   color: var(--texto-suave);
+  font-weight: 400;
+}
+
+.lista .cuando {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  padding: 0 0 4px 32px;
+}
+
+.lista .cuando.vencida {
+  color: var(--peligro);
+  font-weight: 600;
+}
+
+.lista .cuando.mostrada {
+  opacity: 0.7;
 }
 
 .lista .eliminar {
@@ -174,37 +283,64 @@ button:disabled {
 .lista-vacia {
   color: var(--texto-suave);
   text-align: center;
-  padding: 18px 0;
+  padding: 20px 0;
   margin: 0;
   border: 1px dashed var(--borde);
-  border-radius: 12px;
+  border-radius: 14px;
+}
+
+.contenedor-contador {
+  display: flex;
+  justify-content: center;
+  margin: 14px 0 4px;
 }
 
 .contador {
-  color: var(--texto-suave);
-  font-size: 0.95rem;
-  margin: 10px 4px 0;
+  margin: 0;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--gradiente);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: var(--sombra);
 }
 
-/* Estado de capacidades */
+/* Estado de capacidades, con punto de color por estado */
 .estado {
-  margin: 20px 0 12px;
-  padding: 10px 14px;
+  margin: 18px 0 12px;
+  padding: 12px 14px;
   border: 1px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--tarjeta);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85rem;
+  box-shadow: var(--sombra);
 }
 
-.estado p { margin: 2px 0; }
+.estado p { margin: 3px 0; }
 
 .estado span { font-weight: 600; }
+
+.estado span::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: var(--texto-suave);
+  vertical-align: 1px;
+}
+
+.estado span.ok::before { background: var(--exito); }
+.estado span.medio::before { background: var(--aviso); }
+.estado span.mal::before { background: var(--peligro); }
 
 /* Mensajes de retroalimentación */
 .mensaje {
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--borde);
   background: var(--tarjeta);
   margin: 12px 0;
@@ -226,6 +362,10 @@ button:disabled {
   gap: 8px;
 }
 
+.acciones button {
+  border-radius: 14px;
+}
+
 @media (max-width: 360px) {
   .acciones { grid-template-columns: 1fr; }
 }
@@ -235,7 +375,7 @@ button:disabled {
   margin-top: 12px;
   padding: 12px 14px;
   border: 1px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--tarjeta);
 }
 
@@ -246,15 +386,9 @@ button:disabled {
   padding: 8px;
   border: 1px solid var(--borde);
   border-radius: 8px;
-  background: var(--fondo);
+  background: var(--fondo-suave);
   color: var(--texto);
   resize: vertical;
-}
-
-.area-exportacion .botones-fila {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
 }
 
 .pie {

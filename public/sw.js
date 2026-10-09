@@ -14,7 +14,7 @@
 
 'use strict';
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `pendientes-mini-${VERSION}`;
 
 /* Relativas: se resuelven contra la URL de este SW (correcto bajo subruta). */
@@ -23,6 +23,7 @@ const PRECACHE = [
   './index.html',
   './styles.css',
   './app.js',
+  './theme.js',
   './config.js',
   './manifest.webmanifest',
   './icons/icon-192.png',

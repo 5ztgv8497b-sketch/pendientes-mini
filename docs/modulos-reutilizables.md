@@ -100,6 +100,32 @@ Push.cancelar()         // → Promise<void>
   textarea seleccionado + `execCommand('copy')` (el portapapeles es
   intermitente en PWAs standalone de iOS) → descarga por Blob URL.
 
+## 6. `Recordatorios` — avisos locales por fecha/hora (solo app visible)
+
+```js
+Recordatorios.iniciar()    // revisa ya y cada 30 s mientras la app está visible
+Recordatorios.revisar()    // dispara los vencidos y los marca «avisado»
+Recordatorios.fechaTexto(iso) // fecha legible (es-MX) para la lista
+```
+
+- Dispara con `registration.showNotification` (una sola vez por tarea, vía
+  `reminderFired` persistido; tag por tarea evita duplicados).
+- Condiciones: tarea con `remindAt` vencido, pendiente y no avisada; permiso
+  de notificaciones concedido.
+- **Límite de plataforma**: iOS no ofrece temporizadores en segundo plano ni
+  `showTrigger` en WebKit, así que no suena con la app cerrada; el vencido
+  suena al reabrirla. En Android/escritorio se comporta igual sin cambios.
+- Modelo ampliado: `Task = { id, text, completed, createdAt, remindAt?,
+  reminderFired? }` — aditivo, compatible con datos previos.
+
+## Tema claro/oscuro
+
+`public/theme.js` (script externo síncrono, compatible con la CSP) aplica
+`data-theme="claro|oscuro"` en `<html>` antes del primer render; `Interfaz`
+guarda la elección en `pendientes-mini:v1:theme` y actualiza el
+`theme-color`. Sin atributo, el CSS sigue `prefers-color-scheme`. Los colores
+viven solo en variables CSS de `styles.css`.
+
 ## Side del service worker (`public/sw.js`)
 
 - **Caché versionada**: `install` precachea el shell; `activate` borra cachés

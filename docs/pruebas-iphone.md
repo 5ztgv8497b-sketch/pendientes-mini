@@ -82,7 +82,7 @@ Truco para no escribir rutas a mano: en el comando, escribe `--file ` (con un
 espacio al final) y arrastra el archivo desde Finder hasta la ventana de
 Terminal; macOS pega la ruta completa por ti.
 
-- [ ] 1. **Ensayo, no envía nada.** En Terminal, dentro de la carpeta del
+- [x ] 1. **Ensayo, no envía nada.** En Terminal, dentro de la carpeta del
   proyecto:
   ```bash
   cd ~/Documents/Proyectos/recordatorios-mini
@@ -90,26 +90,26 @@ Terminal; macOS pega la ruta completa por ti.
   ```
   Esperado: `Dry-run OK. No se envió nada.` más el endpoint enmascarado.
   Si sale esto, las claves y el JSON están correctos y puedes continuar.
-- [ ] 2. **iPhone:** cierra la app del todo (desliza desde abajo, pausa en
+- [x ] 2. **iPhone:** cierra la app del todo (desliza desde abajo, pausa en
   medio, desliza la app hacia arriba en el multitasking) y **bloquea el
   teléfono**, con Wi-Fi o datos activos. Estar bloqueado no estorba; no tener
   internet sí.
-- [ ] 3. **Enviar de verdad** (Terminal):
+- [x ] 3. **Enviar de verdad** (Terminal):
   ```bash
   node tools/enviar.js --file ~/Documents/pendientes-suscripcion.json --title "Prueba real" --body "Enviado desde la Mac"
   ```
-- [ ] 4. El Terminal imprime `Enviado.` y el endpoint enmascarado.
-- [ ] 5. **iPhone:** en unos segundos el aviso aparece en la **pantalla de
+- [x ] 4. El Terminal imprime `Enviado.` y el endpoint enmascarado.
+- [x ] 5. **iPhone:** en unos segundos el aviso aparece en la **pantalla de
   bloqueo**: «Prueba real / Enviado desde la Mac». Si no llega: Ajustes →
   Notificaciones → Pendientes → activar con «Banners» y pantalla de bloqueo,
   apagar Concentración/No molestar y reenviar (el aviso solo espera 2 minutos
   en cola: TTL 120 s).
-- [ ] 6. **iPhone:** tocar el aviso → pide desbloquear → abre o enfoca la app
+- [x ] 6. **iPhone:** tocar el aviso → pide desbloquear → abre o enfoca la app
   dentro de su propia ruta.
-- [ ] 7. Comprobar que las tareas y el contador «N pendientes» son **los
+- [x ] 7. Comprobar que las tareas y el contador «N pendientes» son **los
   mismos** que antes del envío: el push de prueba no modifica la lista ni el
   badge (es a propósito).
-- [ ] 8. Extra: con la app abierta en primer plano, reenvía el comando del
+- [x ] 8. Extra: con la app abierta en primer plano, reenvía el comando del
   paso 3: el aviso llega como banner.
 
 **Si algo falla:**
@@ -127,6 +127,18 @@ Terminal; macOS pega la ruta completa por ti.
 - [ ] `enviar.js` sin archivo de suscripción → instrucción clara, exit 1.
 - [ ] En modo avión, enviar push → no llega (TTL 120 s); al recuperar
   conexión puede llegar si no expiró, o simplemente no llega.
+
+### I. Recordatorios y tema (funciones nuevas)
+- [ ] 1. Crear una tarea con «Recordatorio» a 1–2 minutos, con la app abierta:
+  al llegar la hora (máx. 30 s después), llega el aviso «⏰ Recordatorio» y la
+  tarea queda marcada «avisado».
+- [ ] 2. Crear una tarea con recordatorio en el pasado (o esperar vencida con
+  la app cerrada): al abrir la app, el aviso suena de inmediato.
+- [ ] 3. Completar una tarea con recordatorio pendiente: ya no dispara aviso.
+- [ ] 4. El botón 🌙/☀️ de la cabecera alterna oscuro/claro; el cambio
+  persiste al cerrar y reabrir la app.
+- [ ] 5. Recordatorio: con la app cerrada NO suena (limitación de iOS); el
+  aviso aparece al reabrirla. Para sonido bloqueado, usa el push (sección G).
 
 ## Seguridad (verificación final)
 - [ ] `git status` limpio: ni `tools/.env` ni `*.json` de suscripción en el repo.
