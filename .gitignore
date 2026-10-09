@@ -1,0 +1,7 @@
+# Secretos y datos locales — jamás publicar
+.env
+tools/.env
+tools/subscription*.json
+tools/node_modules/
+*.pem
+.DS_Store
