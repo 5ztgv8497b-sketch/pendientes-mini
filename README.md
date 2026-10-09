@@ -79,10 +79,10 @@ npm run claves
 1. Abre la URL publicada en Safari → Compartir → **Agregar a Inicio**.
 2. Abre la app desde el icono → **Activar notificaciones** → Permitir.
 3. **Suscribirse a push** → **Exportar suscripción** → copia o descarga el JSON
-   y guárdalo **fuera del repositorio** (p. ej. `~/Documentos/`).
+   y guárdalo **fuera del repositorio** (p. ej. `~/Documents/`).
 4. En la computadora:
    ```bash
-   node tools/enviar.js --file ~/Documentos/pendientes-suscripcion.json \
+   node tools/enviar.js --file ~/Documents/pendientes-suscripcion.json \
         --title "Hola" --body "Prueba de push"
    ```
 5. Con la app cerrada y el iPhone bloqueado (con conexión), el aviso debe
